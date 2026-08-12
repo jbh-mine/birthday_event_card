@@ -23,7 +23,7 @@ test("server-renders the birthday letter without exposing closed messages", asyn
   assert.match(html, /<title>당신의 마흔 번째 계절<\/title>/);
   assert.match(html, /당신의 마흔 번째 계절이/);
   assert.match(html, /마흔 가지 이유/);
-  assert.match(html, /마지막 편지 열기/);
+  assert.match(html, /촛불을 끄면 마지막 편지가 열려요/);
   assert.doesNotMatch(html, /당신이 웃으면 집 안의 공기가 달라져요/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
 });
@@ -104,6 +104,28 @@ test("adds scattered cat photos with optional occasional sounds", async () => {
   assert.match(page, /filmPlaying\) return/);
   assert.match(css, /\.cat-interlude/);
   assert.match(css, /\.cat-photo-one/);
+});
+
+test("turns forty cards and six cats into an accessible birthday finale", async () => {
+  const [page, css, socialPreview] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    stat(new URL("../public/og.png", import.meta.url)),
+  ]);
+
+  assert.match(page, /const constellationStars = Array\.from\(\{ length: 40 \}/);
+  assert.match(page, /const \[foundCats, setFoundCats\]/);
+  assert.match(page, /collectCat\(chapterIndex \* 2/);
+  assert.match(page, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(page, /new AudioContext\(\)/);
+  assert.match(page, /requestAnimationFrame\(detectBlow\)/);
+  assert.match(page, /window\.speechSynthesis\.speak/);
+  assert.match(page, /aria-live="polite"/);
+  assert.match(css, /\.constellation-map/);
+  assert.match(css, /@keyframes starIgnite/);
+  assert.match(css, /@keyframes flameDance/);
+  assert.match(css, /@keyframes fireworkBurst/);
+  assert.ok(socialPreview.size > 100_000);
 });
 
 test("exports a relative-path static site for GitHub Pages", async () => {

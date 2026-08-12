@@ -1,11 +1,28 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const title = "당신의 마흔 번째 계절";
+const description = "마흔 개의 별, 여섯 고양이, 촛불과 1분 영화로 전하는 특별한 생일 편지";
+const publicOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://stunning-chainsaw-q7w7q4xjrv5xh95qv-4173.app.github.dev";
+
 export const metadata: Metadata = {
-  title: "당신의 마흔 번째 계절",
-  description: "세상에서 단 한 사람을 위한 마흔 번째 생일 편지",
-  icons: {
-    icon: "/favicon.svg",
+  metadataBase: new URL(publicOrigin),
+  title,
+  description,
+  icons: { icon: "/favicon.svg" },
+  openGraph: {
+    title: `${title} | Forty & Forever`,
+    description,
+    type: "website",
+    locale: "ko_KR",
+    url: publicOrigin,
+    images: [{ url: "/og.png", width: 1536, height: 1024, alt: "하트 별자리와 촛불로 표현한 마흔 번째 생일 축하 카드" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${title} | Forty & Forever`,
+    description,
+    images: ["/og.png"],
   },
 };
 

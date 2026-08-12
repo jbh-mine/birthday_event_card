@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useMemo, useRef, useState } from "react";
 
 const reasons = [
@@ -138,6 +139,49 @@ const sparkles = Array.from({ length: 28 }, (_, index) => ({
   size: `${2 + (index % 4)}px`,
 }));
 
+const constellationStars = Array.from({ length: 40 }, (_, index) => {
+  const angle = (index / 40) * Math.PI * 2;
+  const x = 50 + 2.35 * 16 * Math.sin(angle) ** 3;
+  const y = 47 - 2.05 * (
+    13 * Math.cos(angle)
+    - 5 * Math.cos(2 * angle)
+    - 2 * Math.cos(3 * angle)
+    - Math.cos(4 * angle)
+  );
+  return { id: index, x, y };
+});
+
+const constellationLines = constellationStars.map((star, index) => {
+  const next = constellationStars[(index + 1) % constellationStars.length];
+  const deltaX = next.x - star.x;
+  const deltaY = next.y - star.y;
+  return {
+    id: index,
+    left: star.x,
+    top: star.y,
+    width: Math.hypot(deltaX, deltaY),
+    angle: Math.atan2(deltaY, deltaX) * (180 / Math.PI),
+  };
+});
+
+const fireworks = Array.from({ length: 54 }, (_, index) => ({
+  id: index,
+  left: `${12 + ((index * 47) % 76)}%`,
+  top: `${18 + ((index * 31) % 42)}%`,
+  x: `${Math.cos((index / 54) * Math.PI * 8) * (80 + (index % 5) * 18)}px`,
+  y: `${Math.sin((index / 54) * Math.PI * 8) * (70 + (index % 7) * 14)}px`,
+  delay: `${(index % 11) * 0.055}s`,
+}));
+
+const letterNarration = [
+  "사랑하는 당신에게.",
+  "당신과 함께한 시간 덕분에 나는 행복이 거창한 것이 아니라는 걸 알게 됐어요.",
+  "나란히 먹는 밥, 문득 마주친 눈, 별일 없었다고 말할 수 있는 저녁.",
+  "그 모든 평범함이 당신 때문에 내 인생의 가장 귀한 장면이 되었어요.",
+  "지금까지의 사십 년을 진심으로 축하하고, 앞으로의 사십 년은 더 많이 웃게 해줄게요.",
+  "태어나줘서 고마워요. 그리고 내 사람이 되어줘서, 정말 고마워요.",
+].join(" ");
+
 export default function Home() {
   const [opened, setOpened] = useState<number[]>([]);
   const [finale, setFinale] = useState(false);
@@ -145,10 +189,19 @@ export default function Home() {
   const [filmPlaying, setFilmPlaying] = useState(false);
   const [filmEnded, setFilmEnded] = useState(false);
   const [catSoundEnabled, setCatSoundEnabled] = useState(true);
+  const [foundCats, setFoundCats] = useState<number[]>([]);
+  const [candleListening, setCandleListening] = useState(false);
+  const [candleBlown, setCandleBlown] = useState(false);
+  const [candleMessage, setCandleMessage] = useState("마흔 개의 별과 여섯 고양이를 모두 만나면 촛불이 켜져요.");
+  const [narrating, setNarrating] = useState(false);
   const filmRef = useRef<HTMLVideoElement>(null);
 
   const openedSet = useMemo(() => new Set(opened), [opened]);
+  const foundCatSet = useMemo(() => new Set(foundCats), [foundCats]);
   const progress = Math.round((opened.length / reasons.length) * 100);
+  const constellationComplete = opened.length === reasons.length;
+  const catsComplete = foundCats.length === 6;
+  const celebrationUnlocked = constellationComplete && catsComplete;
 
   const playCatSound = (soundIndex: number) => {
     if (!catSoundEnabled || filmPlaying) return;
@@ -170,6 +223,13 @@ export default function Home() {
     playCatSound(2);
   };
 
+  const collectCat = (catIndex: number) => {
+    if (foundCatSet.has(catIndex)) return;
+    setFoundCats((current) => [...current, catIndex]);
+    playCatSound(catIndex % catSoundSources.length);
+    navigator.vibrate?.([25, 35, 25]);
+  };
+
   const playFilm = async () => {
     const film = filmRef.current;
     if (!film) return;
@@ -181,6 +241,83 @@ export default function Home() {
     } catch {
       setFilmStarted(false);
     }
+  };
+
+  const finishCandle = () => {
+    if (!celebrationUnlocked || candleBlown) return;
+    setCandleListening(false);
+    setCandleBlown(true);
+    setCandleMessage("소원이 빛이 되었어요. 이제 당신을 위한 영화가 시작됩니다.");
+    navigator.vibrate?.([60, 50, 90, 40, 130]);
+    requestAnimationFrame(() => {
+      document.getElementById("celebration")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      void playFilm();
+    });
+  };
+
+  const listenForBlow = async () => {
+    if (!celebrationUnlocked || candleBlown || candleListening) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCandleMessage("이 브라우저에서는 마이크를 사용할 수 없어요. 불꽃을 직접 눌러주세요.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      const samples = new Uint8Array(analyser.fftSize);
+      const startedAt = performance.now();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      setCandleListening(true);
+      setCandleMessage("촛불을 향해 후— 하고 불어보세요.");
+
+      const stopListening = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        void audioContext.close();
+        setCandleListening(false);
+      };
+
+      const detectBlow = () => {
+        analyser.getByteTimeDomainData(samples);
+        const volume = samples.reduce((total, sample) => total + Math.abs(sample - 128), 0) / samples.length;
+        if (volume > 18) {
+          stopListening();
+          finishCandle();
+          return;
+        }
+        if (performance.now() - startedAt > 12000) {
+          stopListening();
+          setCandleMessage("바람 감지가 어려워요. 불꽃을 직접 눌러도 괜찮아요.");
+          return;
+        }
+        requestAnimationFrame(detectBlow);
+      };
+
+      requestAnimationFrame(detectBlow);
+    } catch {
+      setCandleListening(false);
+      setCandleMessage("마이크 권한 없이도 괜찮아요. 불꽃을 직접 눌러주세요.");
+    }
+  };
+
+  const toggleNarration = () => {
+    if (!("speechSynthesis" in window)) return;
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      setNarrating(false);
+      return;
+    }
+    const narration = new SpeechSynthesisUtterance(letterNarration);
+    narration.lang = "ko-KR";
+    narration.rate = 0.88;
+    narration.pitch = 0.92;
+    narration.onend = () => setNarrating(false);
+    narration.onerror = () => setNarrating(false);
+    setNarrating(true);
+    window.speechSynthesis.speak(narration);
   };
 
   return (
@@ -217,6 +354,7 @@ export default function Home() {
         </a>
         <div className="nav-links">
           <a href="#reasons">마음 40개</a>
+          <a href="#celebration">소원 빌기</a>
           <a href="#future">앞으로의 우리</a>
           <a href="#film">1분 영화</a>
         </div>
@@ -295,6 +433,57 @@ export default function Home() {
           </button>
         </div>
 
+        <section className={`constellation-map ${constellationComplete ? "is-complete" : ""}`} aria-labelledby="constellation-title">
+          <div className="constellation-copy">
+            <span>YOUR HEART CONSTELLATION</span>
+            <h3 id="constellation-title">카드를 열 때마다<br /><em>마음에 별이 켜져요</em></h3>
+            <p>
+              마흔 개의 마음이 모두 빛나면 하나의 하트 별자리가 완성됩니다.
+              아래의 고양이 여섯 마리도 모두 만나보세요.
+            </p>
+            <div className="collection-status" aria-live="polite">
+              <strong><b>{opened.length}</b><small>/ 40</small><span>별빛</span></strong>
+              <i aria-hidden="true" />
+              <strong><b>{foundCats.length}</b><small>/ 6</small><span>고양이 발자국</span></strong>
+            </div>
+            {celebrationUnlocked && <a className="constellation-next" href="#celebration">별자리가 완성됐어요 · 소원 빌러 가기 ↓</a>}
+          </div>
+          <div
+            className="constellation-canvas"
+            role="img"
+            aria-label={`마흔 개 중 ${opened.length}개의 별이 켜진 하트 별자리`}
+          >
+            <span className="constellation-aura" aria-hidden="true" />
+            {constellationLines.map((line) => {
+              const nextId = (line.id + 1) % constellationStars.length;
+              const lineIsLit = openedSet.has(line.id) && openedSet.has(nextId);
+              return (
+                <i
+                  className={`constellation-line ${lineIsLit ? "is-lit" : ""}`}
+                  key={`line-${line.id}`}
+                  style={{
+                    left: `${line.left}%`,
+                    top: `${line.top}%`,
+                    width: `${line.width}%`,
+                    transform: `rotate(${line.angle}deg)`,
+                  }}
+                />
+              );
+            })}
+            {constellationStars.map((star) => (
+              <span
+                className={`constellation-star ${openedSet.has(star.id) ? "is-lit" : ""}`}
+                key={`star-${star.id}`}
+                style={{ left: `${star.x}%`, top: `${star.y}%` }}
+                aria-hidden="true"
+              >
+                <b>{star.id + 1}</b>
+              </span>
+            ))}
+            <span className="constellation-center" aria-hidden="true">40</span>
+          </div>
+        </section>
+
         <div className="reason-collection">
           {Array.from({ length: 4 }, (_, chapterIndex) => {
             const start = chapterIndex * 10;
@@ -347,18 +536,30 @@ export default function Home() {
                 </div>
 
                 {catMoment && (
-                  <aside className={`cat-interlude cat-interlude-${chapterIndex + 1}`} aria-label="고양이 축하 사진">
-                    <figure className="cat-photo cat-photo-one">
+                  <aside className={`cat-interlude cat-interlude-${chapterIndex + 1}`} aria-label="고양이 축하 손님 수집하기">
+                    <button
+                      className={`cat-photo cat-photo-one ${foundCatSet.has(chapterIndex * 2) ? "is-found" : ""}`}
+                      type="button"
+                      onClick={() => collectCat(chapterIndex * 2)}
+                      aria-label={`첫 번째 고양이 ${foundCatSet.has(chapterIndex * 2) ? "수집 완료" : "발자국 남기기"}`}
+                    >
                       <img src={catMoment.photos[0].src} alt={catMoment.photos[0].alt} loading="lazy" decoding="async" />
-                    </figure>
+                      <span className="cat-collect-mark">{foundCatSet.has(chapterIndex * 2) ? "✓ 만났어요" : "발바닥 찍기"}</span>
+                    </button>
                     <div className="cat-message">
                       <span>{catMoment.kicker}</span>
                       <p>{catMoment.copy}</p>
-                      <i aria-hidden="true">meow · meow</i>
+                      <i aria-hidden="true">tap · collect · meow</i>
                     </div>
-                    <figure className="cat-photo cat-photo-two">
+                    <button
+                      className={`cat-photo cat-photo-two ${foundCatSet.has(chapterIndex * 2 + 1) ? "is-found" : ""}`}
+                      type="button"
+                      onClick={() => collectCat(chapterIndex * 2 + 1)}
+                      aria-label={`두 번째 고양이 ${foundCatSet.has(chapterIndex * 2 + 1) ? "수집 완료" : "발자국 남기기"}`}
+                    >
                       <img src={catMoment.photos[1].src} alt={catMoment.photos[1].alt} loading="lazy" decoding="async" />
-                    </figure>
+                      <span className="cat-collect-mark">{foundCatSet.has(chapterIndex * 2 + 1) ? "✓ 만났어요" : "발바닥 찍기"}</span>
+                    </button>
                   </aside>
                 )}
               </div>
@@ -367,9 +568,68 @@ export default function Home() {
         </div>
       </section>
 
+      <section
+        className={`celebration section-shell ${celebrationUnlocked ? "is-unlocked" : "is-locked"} ${candleBlown ? "is-celebrating" : ""}`}
+        id="celebration"
+      >
+        {candleBlown && (
+          <div className="fireworks" aria-hidden="true">
+            {fireworks.map((particle) => (
+              <i
+                key={particle.id}
+                style={{
+                  left: particle.left,
+                  top: particle.top,
+                  "--firework-x": particle.x,
+                  "--firework-y": particle.y,
+                  animationDelay: particle.delay,
+                } as CSSProperties}
+              />
+            ))}
+          </div>
+        )}
+        <div className="celebration-copy">
+          <div className="chapter-label">CHAPTER 03 · MAKE A WISH</div>
+          <p className="celebration-kicker">FORTY STARS, ONE WISH</p>
+          <h2>{candleBlown ? <>소원이 빛이 되어<br /><em>당신에게 닿았어요</em></> : <>마흔 개의 빛 앞에서<br /><em>한 가지 소원을 빌어요</em></>}</h2>
+          <p className="celebration-description">
+            {celebrationUnlocked
+              ? "마이크 버튼을 누르고 촛불을 향해 후— 불어보세요. 마이크를 쓰지 않아도 불꽃을 직접 누를 수 있어요."
+              : "마흔 개의 카드를 열고, 카드 사이에 찾아온 고양이 여섯 마리의 발자국을 모으면 촛불이 켜집니다."}
+          </p>
+          <div className="celebration-totals" aria-label="소원 빌기 준비 상태">
+            <span className={constellationComplete ? "is-done" : ""}>✦ 별 {opened.length}/40</span>
+            <span className={catsComplete ? "is-done" : ""}>🐾 고양이 {foundCats.length}/6</span>
+          </div>
+        </div>
+
+        <div className="wish-stage">
+          <div className={`candle-glow ${candleBlown ? "is-out" : ""}`} aria-hidden="true" />
+          <button
+            className={`candle ${candleBlown ? "is-out" : ""}`}
+            type="button"
+            onClick={finishCandle}
+            disabled={!celebrationUnlocked || candleBlown}
+            aria-label={candleBlown ? "꺼진 촛불" : celebrationUnlocked ? "촛불 끄기" : "아직 잠긴 촛불"}
+          >
+            <span className="flame"><i /></span>
+            <span className="wick" />
+            <span className="candle-body"><b>40</b><i /></span>
+          </button>
+          {!celebrationUnlocked && <span className="wish-lock" aria-hidden="true">별과 발자국을 모두 모아주세요</span>}
+          {celebrationUnlocked && !candleBlown && (
+            <button className={`blow-button ${candleListening ? "is-listening" : ""}`} type="button" onClick={listenForBlow} disabled={candleListening}>
+              <span aria-hidden="true">◉</span>{candleListening ? "바람을 듣고 있어요…" : "마이크로 촛불 불기"}
+            </button>
+          )}
+          {candleBlown && <a className="film-after-wish" href="#film" onClick={() => void playFilm()}>당신을 위한 1분 영화 보기 ▶</a>}
+          <p className="candle-message" aria-live="polite">{candleMessage}</p>
+        </div>
+      </section>
+
       <section className="future section-shell" id="future">
         <div className="future-glow" aria-hidden="true" />
-        <div className="chapter-label">CHAPTER 03 · THE NEXT 40</div>
+        <div className="chapter-label">CHAPTER 04 · THE NEXT 40</div>
         <p className="future-kicker">2046년, 어느 따뜻한 저녁</p>
         <h2>스무 해 뒤의 우리가<br /><em>오늘을 기억한다면</em></h2>
         <div className="timeline" aria-label="앞으로 함께할 시간">
@@ -385,7 +645,7 @@ export default function Home() {
 
       <section className="film-section section-shell" id="film">
         <div className="film-copy">
-          <div className="chapter-label">CHAPTER 04 · A FILM FOR YOU</div>
+          <div className="chapter-label">CHAPTER 05 · A FILM FOR YOU</div>
           <p className="film-kicker">사진 없이, 마음만으로 만든 1분</p>
           <h2>당신의 마흔을 위한<br /><em>아주 작은 영화</em></h2>
           <p>
@@ -431,9 +691,14 @@ export default function Home() {
       <section className="finale section-shell">
         <div className="envelope-wrap">
           {!finale ? (
-            <button className="envelope" onClick={() => setFinale(true)} type="button">
+            <button
+              className={`envelope ${!candleBlown ? "is-locked" : ""}`}
+              onClick={() => setFinale(true)}
+              type="button"
+              disabled={!candleBlown}
+            >
               <span className="seal">40</span>
-              <span className="envelope-label">마지막 편지 열기</span>
+              <span className="envelope-label">{candleBlown ? "마지막 편지 열기" : "촛불을 끄면 마지막 편지가 열려요"}</span>
             </button>
           ) : (
             <article className="letter">
@@ -452,6 +717,9 @@ export default function Home() {
                 태어나줘서 고마워요.<br />
                 그리고 내 사람이 되어줘서, 정말 고마워요.
               </p>
+              <button className={`voice-letter-button ${narrating ? "is-playing" : ""}`} type="button" onClick={toggleNarration}>
+                <span aria-hidden="true">♪</span>{narrating ? "음성 편지 멈추기" : "음성으로 편지 듣기"}
+              </button>
               <div className="signature">영원히 당신의 편인, 남편이</div>
             </article>
           )}
