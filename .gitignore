@@ -43,3 +43,8 @@ dev.stderr.log
 /work/
 *.tar.gz
 *.tsbuildinfo
+.local-birthday-server.pid
+.local-birthday.stdout.log
+.local-birthday.stderr.log
+wrangler-login.stdout.log
+wrangler-login.stderr.log
