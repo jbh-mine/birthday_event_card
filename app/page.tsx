@@ -45,6 +45,51 @@ const reasons = [
   "그리고 마지막 이유는—그냥, 당신이 당신이라서.",
 ];
 
+const characterSeries = [
+  {
+    series: "플레이모빌",
+    slug: "playmobil",
+    characters: [
+      ["탐험가", "explorer"], ["신부", "bride"], ["신랑", "groom"], ["셰프", "chef"], ["의사", "doctor"],
+      ["우주비행사", "astronaut"], ["소방관", "firefighter"], ["정원사", "gardener"], ["뮤지션", "musician"], ["공주", "princess"],
+    ],
+  },
+  {
+    series: "귀멸의 칼날",
+    slug: "demon-slayer",
+    characters: [
+      ["탄지로", "tanjiro"], ["네즈코", "nezuko"], ["젠이츠", "zenitsu"], ["이노스케", "inosuke"], ["렌고쿠", "rengoku"],
+      ["시노부", "shinobu"], ["기유", "giyu"], ["미츠리", "mitsuri"], ["무이치로", "muichiro"], ["텐겐", "tengen"],
+    ],
+  },
+  {
+    series: "주술회전",
+    slug: "jujutsu-kaisen",
+    characters: [
+      ["고죠 사토루", "gojo"], ["이타도리 유지", "yuji"], ["후시구로 메구미", "megumi"], ["쿠기사키 노바라", "nobara"], ["옷코츠 유타", "yuta"],
+      ["젠인 마키", "maki"], ["판다", "panda"], ["이누마키 토게", "inumaki"], ["나나미 켄토", "nanami"], ["스쿠나", "sukuna"],
+    ],
+  },
+  {
+    series: "나의 히어로 아카데미아",
+    slug: "my-hero-academia",
+    characters: [
+      ["데쿠", "deku"], ["바쿠고", "bakugo"], ["토도로키", "todoroki"], ["우라라카", "uraraka"], ["올마이트", "all-might"],
+      ["츠유", "tsuyu"], ["이이다", "iida"], ["키리시마", "kirishima"], ["아이자와", "aizawa"], ["호크스", "hawks"],
+    ],
+  },
+] as const;
+
+const cardCharacters = Array.from({ length: 40 }, (_, index) => {
+  const group = characterSeries[index % characterSeries.length];
+  const characterIndex = Math.floor(index / characterSeries.length);
+  const [name, characterSlug] = group.characters[characterIndex];
+  return {
+    name: `${group.series} ${name}`,
+    src: `/characters/${group.slug}-${String(characterIndex + 1).padStart(2, "0")}-${characterSlug}.webp`,
+  };
+});
+
 const sparkles = Array.from({ length: 28 }, (_, index) => ({
   id: index,
   left: `${(index * 37 + 11) % 100}%`,
@@ -188,13 +233,14 @@ export default function Home() {
         <div className="reason-grid">
           {reasons.map((reason, index) => {
             const isOpen = openedSet.has(index);
+            const character = cardCharacters[index];
             return (
               <button
                 className={`reason-card ${isOpen ? "is-open" : ""}`}
                 key={reason}
                 onClick={() => reveal(index)}
                 type="button"
-                aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}` : " 열기"}`}
+                aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}. ${character.name} 캐릭터` : " 열기"}`}
                 aria-expanded={isOpen}
               >
                 <span className="card-inner">
@@ -204,7 +250,15 @@ export default function Home() {
                     <span className="reason-star" aria-hidden="true">✦</span>
                   </span>
                   <span className="card-face card-back">
-                    {isOpen && <span className="reason-text">{reason}</span>}
+                    {isOpen && (
+                      <>
+                        <span className="character-art" aria-hidden="true">
+                          <img src={character.src} alt="" loading="lazy" decoding="async" />
+                        </span>
+                        <span className="reason-divider" aria-hidden="true" />
+                        <span className="reason-text">{reason}</span>
+                      </>
+                    )}
                     <span className="reason-mark" aria-hidden="true">♥</span>
                   </span>
                 </span>

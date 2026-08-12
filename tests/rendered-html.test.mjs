@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -37,7 +37,8 @@ test("keeps the first screen resilient and the reason cards accessible", async (
 
   assert.doesNotMatch(page, /introDone|setTimeout\(|useEffect/);
   assert.match(page, /aria-expanded=\{isOpen\}/);
-  assert.match(page, /isOpen && <span className="reason-text">\{reason\}<\/span>/);
+  assert.match(page, /isOpen && \(/);
+  assert.match(page, /className="character-art"/);
   assert.doesNotMatch(css, /\.page\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /@keyframes pageReveal/);
   assert.match(css, /@keyframes openingForty/);
@@ -60,8 +61,27 @@ test("includes the photo-free one-minute birthday film", async () => {
   assert.match(page, /poster="\/birthday-film-poster\.jpg"/);
   assert.match(page, /playsInline/);
   assert.match(page, /1분 영화 시작하기/);
-  assert.doesNotMatch(page, /<img\b/);
   assert.match(css, /aspect-ratio:\s*9\s*\/\s*16/);
   assert.ok(video.size > 1_000_000 && video.size < 100_000_000);
   assert.ok(poster.size > 10_000);
+});
+
+test("evenly distributes forty lightweight character illustrations", async () => {
+  const [page, css, files] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readdir(new URL("../public/characters", import.meta.url)),
+  ]);
+  const artwork = files.filter((file) => file.endsWith(".webp"));
+
+  assert.equal(artwork.length, 40);
+  assert.equal(artwork.filter((file) => file.startsWith("playmobil-")).length, 10);
+  assert.equal(artwork.filter((file) => file.startsWith("demon-slayer-")).length, 10);
+  assert.equal(artwork.filter((file) => file.startsWith("jujutsu-kaisen-")).length, 10);
+  assert.equal(artwork.filter((file) => file.startsWith("my-hero-academia-")).length, 10);
+  assert.match(page, /index % characterSeries\.length/);
+  assert.match(page, /loading="lazy"/);
+  assert.match(page, /decoding="async"/);
+  assert.match(css, /@keyframes characterReveal/);
+  assert.match(css, /\.character-art::after/);
 });

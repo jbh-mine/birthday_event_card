@@ -164,7 +164,7 @@ em { color: var(--gold); font-weight: 400; }
 .tap-guide { margin: 0 0 18px; color: #777079; font-size: 12px; letter-spacing: .04em; }
 .reason-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .reason-card {
-  position: relative; aspect-ratio: 1 / 1; min-height: 165px; cursor: pointer; text-align: left;
+  position: relative; aspect-ratio: .72; min-height: 270px; cursor: pointer; text-align: left;
   border: 0; border-radius: 4px; padding: 0; background: transparent; perspective: 900px;
   -webkit-tap-highlight-color: transparent;
   transition: transform .35s ease;
@@ -181,12 +181,16 @@ em { color: var(--gold); font-weight: 400; }
 .card-front::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 80% 10%, rgba(255,109,147,.2), transparent 52%); opacity: .2; transition: opacity .4s ease; }
 .reason-card:hover .card-front { border-color: rgba(246,196,110,.32); }
 .reason-card:hover .card-front::before { opacity: 1; }
-.card-back { transform: rotateY(180deg); background: linear-gradient(145deg, rgba(115,22,58,.88), rgba(35,16,39,.96)); border-color: rgba(246,196,110,.3); box-shadow: 0 16px 40px rgba(65,12,35,.25), inset 0 1px rgba(255,255,255,.08); }
+.card-back { padding: 0; transform: rotateY(180deg); background: linear-gradient(145deg, rgba(115,22,58,.88), rgba(35,16,39,.96)); border-color: rgba(246,196,110,.3); box-shadow: 0 16px 40px rgba(65,12,35,.25), inset 0 1px rgba(255,255,255,.08); }
 .reason-number { font-family: Georgia, serif; font-size: 24px; color: rgba(246,196,110,.75); }
 .reason-prompt { position: absolute; left: 20px; bottom: 20px; color: #777079; font-size: 10px; letter-spacing: .06em; }
-.reason-text { position: absolute; z-index: 2; left: 20px; right: 20px; bottom: 20px; font-family: Georgia, "Noto Serif KR", serif; line-height: 1.65; font-size: 15px; animation: reasonReveal .55s .3s ease both; }
+.character-art { position: absolute; z-index: 1; inset: 0 0 42%; overflow: hidden; background: #2c101e; }
+.character-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 60%, rgba(48,15,29,.88) 100%); pointer-events: none; }
+.character-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 32%; filter: saturate(.92) contrast(1.02); transform: scale(1.015); animation: characterReveal .8s .22s cubic-bezier(.2,.75,.2,1) both; }
+.reason-divider { position: absolute; z-index: 3; top: 58%; left: 16px; right: 16px; height: 1px; background: linear-gradient(90deg, rgba(246,196,110,.78), rgba(246,196,110,.12)); }
+.reason-text { position: absolute; z-index: 3; left: 16px; right: 16px; top: calc(58% + 12px); bottom: 14px; display: flex; align-items: flex-end; font-family: Georgia, "Noto Serif KR", serif; line-height: 1.55; font-size: clamp(12px, 1.15vw, 15px); animation: reasonReveal .55s .3s ease both; }
 .reason-star { position: absolute; right: 18px; top: 18px; color: var(--gold); font-size: 13px; animation: pulse 2s ease-in-out infinite; }
-.reason-mark { position: absolute; top: 14px; right: 17px; color: rgba(246,196,110,.38); font: 18px Georgia, serif; }
+.reason-mark { position: absolute; z-index: 4; top: 14px; right: 17px; color: rgba(246,196,110,.78); text-shadow: 0 0 14px rgba(246,196,110,.35); font: 18px Georgia, serif; }
 .card-burst { position: absolute; z-index: 5; inset: 50%; pointer-events: none; }
 .card-burst i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px var(--gold); animation: cardSpark .9s ease-out both; }
 .card-burst i:nth-child(1) { --x: -74px; --y: -62px; }
@@ -263,6 +267,7 @@ button:focus-visible {
 @keyframes twinkle { 0%,100% { opacity: .15; transform: scale(.8); } 50% { opacity: .8; transform: scale(1.5); } }
 @keyframes pageReveal { from { opacity: .01; } to { opacity: 1; } }
 @keyframes reasonReveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes characterReveal { from { opacity: 0; transform: scale(1.12); filter: blur(7px) saturate(.7); } to { opacity: 1; transform: scale(1.015); filter: saturate(.92) contrast(1.02); } }
 @keyframes openingText { from { opacity: 0; transform: translateY(12px); letter-spacing: .48em; } to { opacity: 1; transform: none; } }
 @keyframes openingForty { from { opacity: 0; transform: scale(.68); filter: blur(12px); } 60% { opacity: 1; } to { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 30px rgba(246,196,110,.25)); } }
 @keyframes haloBloom { from { opacity: 0; transform: scale(.45); } to { opacity: 1; transform: scale(1.2); } }
@@ -303,11 +308,12 @@ button:focus-visible {
   .section-heading h2, .future h2 { font-size: clamp(38px, 10.5vw, 47px); }
   .progress-card { width: 100%; margin-top: 34px; text-align: left; }
   .reason-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .reason-card { min-height: 176px; aspect-ratio: .92; }
+  .reason-card { min-height: 260px; aspect-ratio: .66; }
   .card-face { padding: 16px; }
   .reason-number { font-size: 22px; }
   .reason-prompt { left: 16px; bottom: 16px; max-width: 70px; line-height: 1.45; }
-  .reason-text { left: 16px; right: 16px; bottom: 16px; font-size: clamp(13px, 3.65vw, 15px); line-height: 1.58; }
+  .reason-text { left: 14px; right: 14px; top: calc(58% + 11px); bottom: 13px; font-size: clamp(12px, 3.45vw, 14px); line-height: 1.52; }
+  .reason-divider { left: 14px; right: 14px; }
   .reason-star { right: 15px; top: 15px; }
   .future { min-height: 100dvh; }
   .future-copy br { display: none; }
