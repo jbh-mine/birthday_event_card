@@ -86,9 +86,49 @@ const cardCharacters = Array.from({ length: 40 }, (_, index) => {
   const [name, characterSlug] = group.characters[characterIndex];
   return {
     name: `${group.series} ${name}`,
-    src: `/characters/${group.slug}-${String(characterIndex + 1).padStart(2, "0")}-${characterSlug}.webp`,
+    src: `./characters/${group.slug}-${String(characterIndex + 1).padStart(2, "0")}-${characterSlug}.webp`,
   };
 });
+
+const catMoments = [
+  {
+    kicker: "A TINY GUEST",
+    copy: "첫 번째 고양이도 당신의 마흔을 축하하러 왔어요.",
+    photos: [
+      { src: "./cats/cat-01-orange-tabby.webp", alt: "동그란 눈으로 올려다보는 아기 치즈 고양이" },
+      { src: "./cats/cat-02-tuxedo.webp", alt: "버건디 나비넥타이를 한 턱시도 고양이" },
+    ],
+  },
+  {
+    kicker: "PAWSE & SMILE",
+    copy: "마음을 열다가 잠깐, 고양이 눈빛 한 번 보고 가요.",
+    photos: [
+      { src: "./cats/cat-03-ragdoll.webp", alt: "파란 눈의 복슬복슬한 랙돌 아기 고양이" },
+      { src: "./cats/cat-04-british-shorthair.webp", alt: "앞발을 살짝 들어 인사하는 회색 고양이" },
+    ],
+  },
+  {
+    kicker: "ONE MORE MEOW",
+    copy: "마지막 열 장을 앞두고 작은 응원을 보냅니다.",
+    photos: [
+      { src: "./cats/cat-05-calico.webp", alt: "편안하게 몸을 말고 누운 삼색 아기 고양이" },
+      { src: "./cats/cat-06-black-kitten.webp", alt: "금빛 리본을 한 까만 아기 고양이" },
+    ],
+  },
+] as const;
+
+const catSoundSources = [
+  "./sounds/cat-meow-soft.wav",
+  "./sounds/cat-meow-curious.wav",
+  "./sounds/cat-chirp.wav",
+] as const;
+
+const catSoundCards = new Map([
+  [4, 0],
+  [13, 1],
+  [22, 2],
+  [31, 0],
+]);
 
 const sparkles = Array.from({ length: 28 }, (_, index) => ({
   id: index,
@@ -104,18 +144,31 @@ export default function Home() {
   const [filmStarted, setFilmStarted] = useState(false);
   const [filmPlaying, setFilmPlaying] = useState(false);
   const [filmEnded, setFilmEnded] = useState(false);
+  const [catSoundEnabled, setCatSoundEnabled] = useState(true);
   const filmRef = useRef<HTMLVideoElement>(null);
 
   const openedSet = useMemo(() => new Set(opened), [opened]);
   const progress = Math.round((opened.length / reasons.length) * 100);
 
-  const reveal = (index: number) => {
-    setOpened((current) =>
-      current.includes(index) ? current : [...current, index],
-    );
+  const playCatSound = (soundIndex: number) => {
+    if (!catSoundEnabled || filmPlaying) return;
+    const sound = new Audio(catSoundSources[soundIndex]);
+    sound.volume = 0.24;
+    void sound.play().catch(() => undefined);
   };
 
-  const revealAll = () => setOpened(reasons.map((_, index) => index));
+  const reveal = (index: number) => {
+    if (openedSet.has(index)) return;
+    setOpened((current) => [...current, index]);
+    const soundIndex = catSoundCards.get(index);
+    if (soundIndex !== undefined) playCatSound(soundIndex);
+  };
+
+  const revealAll = () => {
+    if (opened.length === reasons.length) return;
+    setOpened(reasons.map((_, index) => index));
+    playCatSound(2);
+  };
 
   const playFilm = async () => {
     const film = filmRef.current;
@@ -229,45 +282,84 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="tap-guide">반짝이는 숫자를 하나씩 눌러보세요.</p>
-        <div className="reason-grid">
-          {reasons.map((reason, index) => {
-            const isOpen = openedSet.has(index);
-            const character = cardCharacters[index];
+        <div className="reason-controls">
+          <p className="tap-guide">반짝이는 숫자를 하나씩 눌러보세요. 몇몇 카드에는 고양이가 숨어 있어요.</p>
+          <button
+            className={`cat-sound-toggle ${catSoundEnabled ? "is-on" : ""}`}
+            type="button"
+            aria-pressed={catSoundEnabled}
+            onClick={() => setCatSoundEnabled((enabled) => !enabled)}
+          >
+            <span aria-hidden="true">♪</span>
+            고양이 소리 {catSoundEnabled ? "켜짐" : "꺼짐"}
+          </button>
+        </div>
+
+        <div className="reason-collection">
+          {Array.from({ length: 4 }, (_, chapterIndex) => {
+            const start = chapterIndex * 10;
+            const catMoment = catMoments[chapterIndex];
             return (
-              <button
-                className={`reason-card ${isOpen ? "is-open" : ""}`}
-                key={reason}
-                onClick={() => reveal(index)}
-                type="button"
-                aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}. ${character.name} 캐릭터` : " 열기"}`}
-                aria-expanded={isOpen}
-              >
-                <span className="card-inner">
-                  <span className="card-face card-front">
-                    <span className="reason-number">{String(index + 1).padStart(2, "0")}</span>
-                    <span className="reason-prompt">마음을 열어보세요</span>
-                    <span className="reason-star" aria-hidden="true">✦</span>
-                  </span>
-                  <span className="card-face card-back">
-                    {isOpen && (
-                      <>
-                        <span className="character-art" aria-hidden="true">
-                          <img src={character.src} alt="" loading="lazy" decoding="async" />
+              <div className="reason-chapter" key={`reason-chapter-${chapterIndex + 1}`}>
+                <div className="reason-grid">
+                  {reasons.slice(start, start + 10).map((reason, offset) => {
+                    const index = start + offset;
+                    const isOpen = openedSet.has(index);
+                    const character = cardCharacters[index];
+                    return (
+                      <button
+                        className={`reason-card ${isOpen ? "is-open" : ""}`}
+                        key={reason}
+                        onClick={() => reveal(index)}
+                        type="button"
+                        aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}. ${character.name} 캐릭터` : " 열기"}`}
+                        aria-expanded={isOpen}
+                      >
+                        <span className="card-inner">
+                          <span className="card-face card-front">
+                            <span className="reason-number">{String(index + 1).padStart(2, "0")}</span>
+                            <span className="reason-prompt">마음을 열어보세요</span>
+                            <span className="reason-star" aria-hidden="true">✦</span>
+                          </span>
+                          <span className="card-face card-back">
+                            {isOpen && (
+                              <>
+                                <span className="character-art" aria-hidden="true">
+                                  <img src={character.src} alt="" loading="lazy" decoding="async" />
+                                </span>
+                                <span className="reason-divider" aria-hidden="true" />
+                                <span className="reason-text">{reason}</span>
+                              </>
+                            )}
+                            <span className="reason-mark" aria-hidden="true">♥</span>
+                          </span>
                         </span>
-                        <span className="reason-divider" aria-hidden="true" />
-                        <span className="reason-text">{reason}</span>
-                      </>
-                    )}
-                    <span className="reason-mark" aria-hidden="true">♥</span>
-                  </span>
-                </span>
-                {isOpen && (
-                  <span className="card-burst" aria-hidden="true">
-                    <i /><i /><i /><i /><i /><i />
-                  </span>
+                        {isOpen && (
+                          <span className="card-burst" aria-hidden="true">
+                            <i /><i /><i /><i /><i /><i />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {catMoment && (
+                  <aside className={`cat-interlude cat-interlude-${chapterIndex + 1}`} aria-label="고양이 축하 사진">
+                    <figure className="cat-photo cat-photo-one">
+                      <img src={catMoment.photos[0].src} alt={catMoment.photos[0].alt} loading="lazy" decoding="async" />
+                    </figure>
+                    <div className="cat-message">
+                      <span>{catMoment.kicker}</span>
+                      <p>{catMoment.copy}</p>
+                      <i aria-hidden="true">meow · meow</i>
+                    </div>
+                    <figure className="cat-photo cat-photo-two">
+                      <img src={catMoment.photos[1].src} alt={catMoment.photos[1].alt} loading="lazy" decoding="async" />
+                    </figure>
+                  </aside>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
@@ -306,7 +398,7 @@ export default function Home() {
             ref={filmRef}
             playsInline
             preload="metadata"
-            poster="/birthday-film-poster.jpg"
+            poster="./birthday-film-poster.jpg"
             controls={filmStarted}
             onPlay={() => setFilmPlaying(true)}
             onPause={() => setFilmPlaying(false)}
@@ -316,7 +408,7 @@ export default function Home() {
             }}
             aria-label="당신의 마흔을 축하하는 1분 생일 영화"
           >
-            <source src="/birthday-film.mp4" type="video/mp4" />
+            <source src="./birthday-film.mp4" type="video/mp4" />
           </video>
 
           {(!filmStarted || filmEnded) && (

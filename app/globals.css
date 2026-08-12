@@ -161,8 +161,27 @@ em { color: var(--gold); font-weight: 400; }
 .progress-track i { display: block; height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); transition: width .5s ease; }
 .progress-card button { margin-top: 14px; padding: 0; border: 0; background: transparent; color: #8c858b; font-size: 11px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 .progress-card button:disabled { cursor: default; text-decoration: none; color: #b6a89f; }
-.tap-guide { margin: 0 0 18px; color: #777079; font-size: 12px; letter-spacing: .04em; }
+.reason-controls { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 18px; }
+.tap-guide { margin: 0; color: #777079; font-size: 12px; letter-spacing: .04em; }
+.cat-sound-toggle { display: inline-flex; align-items: center; gap: 9px; flex: 0 0 auto; min-height: 36px; padding: 7px 13px; border: 1px solid rgba(246,196,110,.22); border-radius: 999px; background: rgba(255,255,255,.025); color: #8f858c; font-size: 10px; letter-spacing: .04em; cursor: pointer; transition: color .25s ease, border-color .25s ease, background .25s ease; }
+.cat-sound-toggle span { color: #756b70; font-size: 13px; }
+.cat-sound-toggle.is-on { color: #d8c5b8; border-color: rgba(246,196,110,.42); background: rgba(112,29,58,.2); }
+.cat-sound-toggle.is-on span { color: var(--gold); animation: pulse 2s ease-in-out infinite; }
+.reason-collection { display: grid; }
 .reason-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.cat-interlude { position: relative; display: grid; grid-template-columns: minmax(160px, .8fr) minmax(260px, 1.2fr) minmax(160px, .8fr); align-items: center; gap: clamp(24px, 5vw, 72px); margin: clamp(58px, 8vw, 96px) 0; padding: 34px clamp(14px, 4vw, 50px); border-top: 1px solid rgba(246,196,110,.12); border-bottom: 1px solid rgba(246,196,110,.12); }
+.cat-interlude::before, .cat-interlude::after { content: ""; position: absolute; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(169,44,84,.19), transparent 68%); filter: blur(10px); pointer-events: none; }
+.cat-interlude::before { left: 7%; top: 10%; }
+.cat-interlude::after { right: 6%; bottom: 4%; }
+.cat-photo { position: relative; z-index: 1; margin: 0; padding: 6px; border: 1px solid rgba(246,196,110,.3); border-radius: 9px; background: rgba(31,16,25,.86); box-shadow: 0 26px 65px rgba(0,0,0,.38); transition: transform .45s ease, border-color .45s ease; }
+.cat-photo-one { transform: rotate(-3.5deg); }
+.cat-photo-two { transform: rotate(3.5deg); }
+.cat-photo:hover { border-color: rgba(246,196,110,.64); transform: rotate(0) translateY(-6px); }
+.cat-photo img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; filter: saturate(.92) contrast(1.03); }
+.cat-message { position: relative; z-index: 1; text-align: center; }
+.cat-message > span { color: var(--gold); font-size: 9px; letter-spacing: .28em; }
+.cat-message p { margin: 16px auto 13px; max-width: 370px; color: #ded4d0; font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(20px, 2.25vw, 29px); line-height: 1.58; }
+.cat-message i { color: #756c72; font-family: Georgia, serif; font-size: 10px; letter-spacing: .18em; }
 .reason-card {
   position: relative; aspect-ratio: .72; min-height: 270px; cursor: pointer; text-align: left;
   border: 0; border-radius: 4px; padding: 0; background: transparent; perspective: 900px;
@@ -307,7 +326,16 @@ button:focus-visible {
   .section-heading { display: block; }
   .section-heading h2, .future h2 { font-size: clamp(38px, 10.5vw, 47px); }
   .progress-card { width: 100%; margin-top: 34px; text-align: left; }
+  .reason-controls { align-items: flex-start; flex-direction: column; gap: 13px; }
+  .tap-guide { max-width: 290px; line-height: 1.65; }
+  .cat-sound-toggle { min-height: 38px; }
   .reason-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .cat-interlude { grid-template-columns: 1fr 1fr; gap: 11px; margin: 54px 0; padding: 34px 5px; }
+  .cat-message { grid-column: 1 / -1; grid-row: 1; margin-bottom: 16px; padding: 0 14px; }
+  .cat-message p { max-width: 310px; margin-top: 13px; font-size: clamp(20px, 6vw, 25px); }
+  .cat-photo { padding: 4px; }
+  .cat-photo-one { transform: rotate(-2.5deg); }
+  .cat-photo-two { transform: rotate(2.5deg); }
   .reason-card { min-height: 260px; aspect-ratio: .66; }
   .card-face { padding: 16px; }
   .reason-number { font-size: 22px; }

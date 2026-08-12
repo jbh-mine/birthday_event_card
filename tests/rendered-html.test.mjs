@@ -57,8 +57,8 @@ test("includes the photo-free one-minute birthday film", async () => {
     stat(new URL("../public/birthday-film-poster.jpg", import.meta.url)),
   ]);
 
-  assert.match(page, /src="\/birthday-film\.mp4"/);
-  assert.match(page, /poster="\/birthday-film-poster\.jpg"/);
+  assert.match(page, /src="\.\/birthday-film\.mp4"/);
+  assert.match(page, /poster="\.\/birthday-film-poster\.jpg"/);
   assert.match(page, /playsInline/);
   assert.match(page, /1분 영화 시작하기/);
   assert.match(css, /aspect-ratio:\s*9\s*\/\s*16/);
@@ -84,4 +84,42 @@ test("evenly distributes forty lightweight character illustrations", async () =>
   assert.match(page, /decoding="async"/);
   assert.match(css, /@keyframes characterReveal/);
   assert.match(css, /\.character-art::after/);
+});
+
+test("adds scattered cat photos with optional occasional sounds", async () => {
+  const [page, css, cats, sounds] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readdir(new URL("../public/cats", import.meta.url)),
+    readdir(new URL("../public/sounds", import.meta.url)),
+  ]);
+
+  assert.equal(cats.filter((file) => file.endsWith(".webp")).length, 6);
+  assert.equal(sounds.filter((file) => file.endsWith(".wav")).length, 3);
+  assert.match(page, /const catSoundCards = new Map/);
+  assert.match(page, /cat-sound-toggle/);
+  assert.match(page, /aria-pressed=\{catSoundEnabled\}/);
+  assert.match(page, /new Audio\(catSoundSources\[soundIndex\]\)/);
+  assert.match(page, /sound\.volume = 0\.24/);
+  assert.match(page, /filmPlaying\) return/);
+  assert.match(css, /\.cat-interlude/);
+  assert.match(css, /\.cat-photo-one/);
+});
+
+test("exports a relative-path static site for GitHub Pages", async () => {
+  const [page, exporter, workflow] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/export-github-pages.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../.github/workflows/deploy-pages.yml", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(page, /src: `\.\/characters\//);
+  assert.match(page, /"\.\/cats\//);
+  assert.match(page, /"\.\/sounds\//);
+  assert.match(exporter, /dist\/client/);
+  assert.match(exporter, /\.nojekyll/);
+  assert.match(workflow, /actions\/checkout@v6/);
+  assert.match(workflow, /actions\/configure-pages@v5/);
+  assert.match(workflow, /actions\/upload-pages-artifact@v4/);
+  assert.match(workflow, /actions\/deploy-pages@v4/);
 });
