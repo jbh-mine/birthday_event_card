@@ -1,5 +1,3 @@
-@import "tailwindcss";
-
 :root {
   --ink: #f8f3ea;
   --muted: #b9afaa;
@@ -28,10 +26,8 @@ button { color: inherit; }
   background:
     radial-gradient(circle at 52% 8%, rgba(120, 25, 65, .26), transparent 35%),
     linear-gradient(180deg, #0b0710 0%, #0a0811 38%, #130814 72%, #08060c 100%);
-  opacity: 0;
-  transition: opacity 1.2s ease;
+  animation: pageReveal 1.2s ease both;
 }
-.page.is-ready { opacity: 1; }
 
 .ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
 .aurora { position: absolute; width: 48vw; height: 48vw; border-radius: 50%; filter: blur(110px); opacity: .12; animation: breathe 9s ease-in-out infinite alternate; }
@@ -102,6 +98,7 @@ em { color: var(--gold); font-weight: 400; }
 .progress-track { height: 2px; background: rgba(255,255,255,.12); overflow: hidden; }
 .progress-track i { display: block; height: 100%; background: linear-gradient(90deg, var(--rose), var(--gold)); transition: width .5s ease; }
 .progress-card button { margin-top: 14px; padding: 0; border: 0; background: transparent; color: #8c858b; font-size: 11px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+.progress-card button:disabled { cursor: default; text-decoration: none; color: #b6a89f; }
 .tap-guide { margin: 0 0 18px; color: #777079; font-size: 12px; letter-spacing: .04em; }
 .reason-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .reason-card {
@@ -114,11 +111,16 @@ em { color: var(--gold); font-weight: 400; }
 .reason-card:hover { transform: translateY(-5px); border-color: rgba(246,196,110,.32); }
 .reason-card:hover::before, .reason-card.is-open::before { opacity: 1; }
 .reason-number { font-family: Georgia, serif; font-size: 24px; color: rgba(246,196,110,.75); }
-.reason-text { position: absolute; left: 20px; right: 20px; bottom: 20px; font-family: Georgia, "Noto Serif KR", serif; line-height: 1.65; font-size: 15px; opacity: 0; transform: translateY(8px); transition: .45s ease; }
+.reason-text { position: absolute; left: 20px; right: 20px; bottom: 20px; font-family: Georgia, "Noto Serif KR", serif; line-height: 1.65; font-size: 15px; animation: reasonReveal .45s ease both; }
 .reason-star { position: absolute; right: 18px; top: 18px; color: var(--gold); font-size: 13px; animation: pulse 2s ease-in-out infinite; }
 .reason-card.is-open { background: linear-gradient(145deg, rgba(115,22,58,.52), rgba(35,16,39,.72)); border-color: rgba(246,196,110,.23); }
-.reason-card.is-open .reason-text { opacity: 1; transform: none; }
 .reason-card.is-open .reason-star { opacity: .2; }
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 5px;
+}
 
 .future { min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 120px 0; }
 .future-glow { position: absolute; width: 540px; height: 540px; border-radius: 50%; background: radial-gradient(circle, rgba(177,48,98,.17), transparent 68%); filter: blur(25px); pointer-events: none; }
@@ -156,6 +158,8 @@ em { color: var(--gold); font-weight: 400; }
 .wish-small { margin-top: 36px; color: #8f858c; font-family: Georgia, "Noto Serif KR", serif; font-size: 14px; letter-spacing: .08em; }
 
 @keyframes twinkle { 0%,100% { opacity: .15; transform: scale(.8); } 50% { opacity: .8; transform: scale(1.5); } }
+@keyframes pageReveal { from { opacity: .01; } to { opacity: 1; } }
+@keyframes reasonReveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes breathe { to { transform: translate(5vw, 3vw) scale(1.14); opacity: .19; } }
 @keyframes spin { to { rotate: 360deg; } }
 @keyframes pulse { 0%,100% { transform: scale(.82); opacity: .45; } 50% { transform: scale(1.18); opacity: 1; } }

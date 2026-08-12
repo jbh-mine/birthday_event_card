@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const reasons = [
   "당신이 웃으면 집 안의 공기가 달라져요.",
@@ -56,12 +56,6 @@ const sparkles = Array.from({ length: 28 }, (_, index) => ({
 export default function Home() {
   const [opened, setOpened] = useState<number[]>([]);
   const [finale, setFinale] = useState(false);
-  const [introDone, setIntroDone] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setIntroDone(true), 900);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   const openedSet = useMemo(() => new Set(opened), [opened]);
   const progress = Math.round((opened.length / reasons.length) * 100);
@@ -75,7 +69,7 @@ export default function Home() {
   const revealAll = () => setOpened(reasons.map((_, index) => index));
 
   return (
-    <main className={`page ${introDone ? "is-ready" : ""}`}>
+    <main className="page">
       <div className="ambient" aria-hidden="true">
         <div className="aurora aurora-one" />
         <div className="aurora aurora-two" />
@@ -147,10 +141,21 @@ export default function Home() {
             <div className="chapter-label">CHAPTER 02 · 40 REASONS</div>
             <h2>내가 당신을 사랑하는<br /><em>마흔 가지 이유</em></h2>
           </div>
-          <div className="progress-card" aria-live="polite">
+          <div className="progress-card">
             <span>{opened.length.toString().padStart(2, "0")} / 40</span>
-            <div className="progress-track"><i style={{ width: `${progress}%` }} /></div>
-            <button onClick={revealAll} type="button">한번에 모두 열기</button>
+            <div
+              className="progress-track"
+              role="progressbar"
+              aria-label="열어본 사랑의 이유"
+              aria-valuemin={0}
+              aria-valuemax={40}
+              aria-valuenow={opened.length}
+            >
+              <i style={{ width: `${progress}%` }} />
+            </div>
+            <button onClick={revealAll} type="button" disabled={opened.length === 40}>
+              {opened.length === 40 ? "모두 열었어요" : "한번에 모두 열기"}
+            </button>
           </div>
         </div>
 
@@ -165,9 +170,10 @@ export default function Home() {
                 onClick={() => reveal(index)}
                 type="button"
                 aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}` : " 열기"}`}
+                aria-expanded={isOpen}
               >
                 <span className="reason-number">{String(index + 1).padStart(2, "0")}</span>
-                <span className="reason-text">{reason}</span>
+                {isOpen && <span className="reason-text">{reason}</span>}
                 <span className="reason-star" aria-hidden="true">✦</span>
               </button>
             );
