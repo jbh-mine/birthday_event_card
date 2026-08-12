@@ -37,9 +37,12 @@ test("keeps the first screen resilient and the reason cards accessible", async (
 
   assert.doesNotMatch(page, /introDone|setTimeout\(|useEffect/);
   assert.match(page, /aria-expanded=\{isOpen\}/);
-  assert.match(page, /\{isOpen && <span className="reason-text">\{reason\}<\/span>\}/);
+  assert.match(page, /isOpen && <span className="reason-text">\{reason\}<\/span>/);
   assert.doesNotMatch(css, /\.page\s*\{[^}]*opacity:\s*0/s);
   assert.match(css, /@keyframes pageReveal/);
+  assert.match(css, /@keyframes openingForty/);
+  assert.match(css, /@keyframes cardSpark/);
+  assert.match(css, /rotateY\(180deg\)/);
   assert.match(css, /:focus-visible/);
   assert.match(packageJson, /node scripts\/vinext\.mjs build/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton|drizzle|tailwind/);

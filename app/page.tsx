@@ -70,6 +70,13 @@ export default function Home() {
 
   return (
     <main className="page">
+      <div className="opening-scene" aria-hidden="true">
+        <div className="opening-halo" />
+        <p>FOR THE MOST BEAUTIFUL SEASON</p>
+        <strong>40</strong>
+        <span>당신을 위한 이야기가 시작됩니다</span>
+      </div>
+
       <div className="ambient" aria-hidden="true">
         <div className="aurora aurora-one" />
         <div className="aurora aurora-two" />
@@ -172,9 +179,22 @@ export default function Home() {
                 aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}` : " 열기"}`}
                 aria-expanded={isOpen}
               >
-                <span className="reason-number">{String(index + 1).padStart(2, "0")}</span>
-                {isOpen && <span className="reason-text">{reason}</span>}
-                <span className="reason-star" aria-hidden="true">✦</span>
+                <span className="card-inner">
+                  <span className="card-face card-front">
+                    <span className="reason-number">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="reason-prompt">마음을 열어보세요</span>
+                    <span className="reason-star" aria-hidden="true">✦</span>
+                  </span>
+                  <span className="card-face card-back">
+                    {isOpen && <span className="reason-text">{reason}</span>}
+                    <span className="reason-mark" aria-hidden="true">♥</span>
+                  </span>
+                </span>
+                {isOpen && (
+                  <span className="card-burst" aria-hidden="true">
+                    <i /><i /><i /><i /><i /><i />
+                  </span>
+                )}
               </button>
             );
           })}
