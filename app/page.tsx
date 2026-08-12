@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 const reasons = [
   "당신이 웃으면 집 안의 공기가 달라져요.",
@@ -56,6 +56,10 @@ const sparkles = Array.from({ length: 28 }, (_, index) => ({
 export default function Home() {
   const [opened, setOpened] = useState<number[]>([]);
   const [finale, setFinale] = useState(false);
+  const [filmStarted, setFilmStarted] = useState(false);
+  const [filmPlaying, setFilmPlaying] = useState(false);
+  const [filmEnded, setFilmEnded] = useState(false);
+  const filmRef = useRef<HTMLVideoElement>(null);
 
   const openedSet = useMemo(() => new Set(opened), [opened]);
   const progress = Math.round((opened.length / reasons.length) * 100);
@@ -67,6 +71,19 @@ export default function Home() {
   };
 
   const revealAll = () => setOpened(reasons.map((_, index) => index));
+
+  const playFilm = async () => {
+    const film = filmRef.current;
+    if (!film) return;
+    if (filmEnded) film.currentTime = 0;
+    setFilmStarted(true);
+    setFilmEnded(false);
+    try {
+      await film.play();
+    } catch {
+      setFilmStarted(false);
+    }
+  };
 
   return (
     <main className="page">
@@ -103,6 +120,7 @@ export default function Home() {
         <div className="nav-links">
           <a href="#reasons">마음 40개</a>
           <a href="#future">앞으로의 우리</a>
+          <a href="#film">1분 영화</a>
         </div>
       </nav>
 
@@ -215,6 +233,51 @@ export default function Home() {
           그래도 한 가지는 지금과 똑같을 거예요.<br />
           <strong>나는 여전히 당신의 가장 가까운 편이라는 것.</strong>
         </p>
+      </section>
+
+      <section className="film-section section-shell" id="film">
+        <div className="film-copy">
+          <div className="chapter-label">CHAPTER 04 · A FILM FOR YOU</div>
+          <p className="film-kicker">사진 없이, 마음만으로 만든 1분</p>
+          <h2>당신의 마흔을 위한<br /><em>아주 작은 영화</em></h2>
+          <p>
+            조용한 빛과 문장, 그리고 오직 이 순간을 위해 만든 음악에<br />
+            당신에게 꼭 전하고 싶었던 마음을 담았어요.
+          </p>
+          <div className="film-sound-note"><span aria-hidden="true">♪</span> 소리를 켜면 마음이 더 잘 들려요</div>
+        </div>
+
+        <div className={`film-frame ${filmPlaying ? "is-playing" : ""}`}>
+          <video
+            ref={filmRef}
+            playsInline
+            preload="metadata"
+            poster="/birthday-film-poster.jpg"
+            controls={filmStarted}
+            onPlay={() => setFilmPlaying(true)}
+            onPause={() => setFilmPlaying(false)}
+            onEnded={() => {
+              setFilmPlaying(false);
+              setFilmEnded(true);
+            }}
+            aria-label="당신의 마흔을 축하하는 1분 생일 영화"
+          >
+            <source src="/birthday-film.mp4" type="video/mp4" />
+          </video>
+
+          {(!filmStarted || filmEnded) && (
+            <button className="film-launch" type="button" onClick={playFilm}>
+              <span className="play-orb" aria-hidden="true"><i>▶</i></span>
+              <strong>{filmEnded ? "한 번 더 보기" : "1분 영화 시작하기"}</strong>
+              <small>탭하면 음악과 함께 재생됩니다</small>
+            </button>
+          )}
+
+          <div className="film-runtime" aria-hidden="true">
+            <span>ORIGINAL BIRTHDAY FILM</span>
+            <b>01:00</b>
+          </div>
+        </div>
       </section>
 
       <section className="finale section-shell">
