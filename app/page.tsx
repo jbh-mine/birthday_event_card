@@ -646,11 +646,11 @@ export default function Home() {
       <section className="film-section section-shell" id="film">
         <div className="film-copy">
           <div className="chapter-label">CHAPTER 05 · A FILM FOR YOU</div>
-          <p className="film-kicker">사진 없이, 마음만으로 만든 1분</p>
-          <h2>당신의 마흔을 위한<br /><em>아주 작은 영화</em></h2>
+          <p className="film-kicker">사진 없이, 빛으로 그린 1분 성장 드라마</p>
+          <h2>당신이 걸어온 계절과<br /><em>앞으로 빛날 시간</em></h2>
           <p>
-            조용한 빛과 문장, 그리고 오직 이 순간을 위해 만든 음악에<br />
-            당신에게 꼭 전하고 싶었던 마음을 담았어요.
+            작은 숨결로 시작해 마흔의 빛에 닿고, 다시 미래의 새벽으로.<br />
+            당신의 모든 계절을 한 편의 움직이는 이야기로 담았어요.
           </p>
           <div className="film-sound-note"><span aria-hidden="true">♪</span> 소리를 켜면 마음이 더 잘 들려요</div>
         </div>
@@ -668,7 +668,7 @@ export default function Home() {
               setFilmPlaying(false);
               setFilmEnded(true);
             }}
-            aria-label="당신의 마흔을 축하하는 1분 생일 영화"
+            aria-label="아기 때부터 마흔과 미래까지 성장하는 과정을 담은 1분 생일 영화"
           >
             <source src="./birthday-film.mp4" type="video/mp4" />
           </video>

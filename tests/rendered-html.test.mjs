@@ -50,9 +50,10 @@ test("keeps the first screen resilient and the reason cards accessible", async (
 });
 
 test("includes the photo-free one-minute birthday film", async () => {
-  const [page, css, video, poster] = await Promise.all([
+  const [page, css, generator, video, poster] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/generate-birthday-film.py", import.meta.url), "utf8"),
     stat(new URL("../public/birthday-film.mp4", import.meta.url)),
     stat(new URL("../public/birthday-film-poster.jpg", import.meta.url)),
   ]);
@@ -61,6 +62,12 @@ test("includes the photo-free one-minute birthday film", async () => {
   assert.match(page, /poster="\.\/birthday-film-poster\.jpg"/);
   assert.match(page, /playsInline/);
   assert.match(page, /1분 영화 시작하기/);
+  assert.match(page, /빛으로 그린 1분 성장 드라마/);
+  assert.match(generator, /draw_cradle/);
+  assert.match(generator, /draw_person/);
+  assert.match(generator, /draw_heart_constellation/);
+  assert.match(generator, /scene_future/);
+  assert.match(generator, /add_heartbeat/);
   assert.match(css, /aspect-ratio:\s*9\s*\/\s*16/);
   assert.ok(video.size > 1_000_000 && video.size < 100_000_000);
   assert.ok(poster.size > 10_000);
