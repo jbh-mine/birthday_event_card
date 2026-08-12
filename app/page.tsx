@@ -306,9 +306,11 @@ export default function Home() {
                     const index = start + offset;
                     const isOpen = openedSet.has(index);
                     const character = cardCharacters[index];
+                    const copyLength = reason.replace(/\s/g, "").length;
+                    const copySize = copyLength > 21 ? "long" : copyLength > 17 ? "medium" : "short";
                     return (
                       <button
-                        className={`reason-card ${isOpen ? "is-open" : ""}`}
+                        className={`reason-card reason-copy-${copySize} ${isOpen ? "is-open" : ""}`}
                         key={reason}
                         onClick={() => reveal(index)}
                         type="button"

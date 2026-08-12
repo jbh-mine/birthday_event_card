@@ -1,0 +1,26 @@
+{
+  "name": "Forty Seasons Birthday Card",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-24-bookworm",
+  "forwardPorts": [4173],
+  "portsAttributes": {
+    "4173": {
+      "label": "Birthday card",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "postStartCommand": "nohup npm run dev -- --host 0.0.0.0 --port 4173 > /tmp/birthday-card.log 2>&1 &",
+  "customizations": {
+    "codespaces": {
+      "openFiles": [
+        "README.md"
+      ]
+    },
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}
