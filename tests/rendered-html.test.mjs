@@ -121,6 +121,9 @@ test("turns forty cards and six cats into an accessible birthday finale", async 
   ]);
 
   assert.match(page, /const constellationStars = Array\.from\(\{ length: 40 \}/);
+  assert.match(page, /constellationDockRef/);
+  assert.match(page, /className="star-flight"/);
+  assert.match(page, /dock-star-/);
   assert.match(page, /const \[foundCats, setFoundCats\]/);
   assert.match(page, /collectCat\(chapterIndex \* 2/);
   assert.match(page, /navigator\.mediaDevices\.getUserMedia/);
@@ -129,6 +132,9 @@ test("turns forty cards and six cats into an accessible birthday finale", async 
   assert.match(page, /window\.speechSynthesis\.speak/);
   assert.match(page, /aria-live="polite"/);
   assert.match(css, /\.constellation-map/);
+  assert.match(css, /\.constellation-dock/);
+  assert.match(css, /@keyframes starFlight/);
+  assert.match(css, /@keyframes dockStarIgnite/);
   assert.match(css, /@keyframes starIgnite/);
   assert.match(css, /@keyframes flameDance/);
   assert.match(css, /@keyframes fireworkBurst/);

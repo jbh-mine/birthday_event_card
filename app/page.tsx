@@ -194,7 +194,16 @@ export default function Home() {
   const [candleBlown, setCandleBlown] = useState(false);
   const [candleMessage, setCandleMessage] = useState("마흔 개의 별과 여섯 고양이를 모두 만나면 촛불이 켜져요.");
   const [narrating, setNarrating] = useState(false);
+  const [lastLitStar, setLastLitStar] = useState<number | null>(null);
+  const [flyingStar, setFlyingStar] = useState<{
+    id: number;
+    x: number;
+    y: number;
+    deltaX: number;
+    deltaY: number;
+  } | null>(null);
   const filmRef = useRef<HTMLVideoElement>(null);
+  const constellationDockRef = useRef<HTMLAnchorElement>(null);
 
   const openedSet = useMemo(() => new Set(opened), [opened]);
   const foundCatSet = useMemo(() => new Set(foundCats), [foundCats]);
@@ -210,15 +219,32 @@ export default function Home() {
     void sound.play().catch(() => undefined);
   };
 
-  const reveal = (index: number) => {
+  const reveal = (index: number, origin?: HTMLElement) => {
     if (openedSet.has(index)) return;
+    const originRect = origin?.getBoundingClientRect();
+    const dockRect = constellationDockRef.current?.getBoundingClientRect();
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (originRect && dockRect && !reduceMotion) {
+      const x = originRect.left + originRect.width / 2;
+      const y = originRect.top + Math.min(originRect.height * 0.34, 120);
+      setFlyingStar({
+        id: index,
+        x,
+        y,
+        deltaX: dockRect.left + dockRect.width * 0.72 - x,
+        deltaY: dockRect.top + dockRect.height * 0.52 - y,
+      });
+    }
+    setLastLitStar(index);
     setOpened((current) => [...current, index]);
+    navigator.vibrate?.(12);
     const soundIndex = catSoundCards.get(index);
     if (soundIndex !== undefined) playCatSound(soundIndex);
   };
 
   const revealAll = () => {
     if (opened.length === reasons.length) return;
+    setLastLitStar(reasons.length - 1);
     setOpened(reasons.map((_, index) => index));
     playCatSound(2);
   };
@@ -421,7 +447,7 @@ export default function Home() {
         </div>
 
         <div className="reason-controls">
-          <p className="tap-guide">반짝이는 숫자를 하나씩 눌러보세요. 몇몇 카드에는 고양이가 숨어 있어요.</p>
+          <p className="tap-guide">카드를 열면 별빛이 화면 오른쪽 아래의 미니 별자리에 꽂혀요. 몇몇 카드에는 고양이도 숨어 있어요.</p>
           <button
             className={`cat-sound-toggle ${catSoundEnabled ? "is-on" : ""}`}
             type="button"
@@ -433,7 +459,52 @@ export default function Home() {
           </button>
         </div>
 
-        <section className={`constellation-map ${constellationComplete ? "is-complete" : ""}`} aria-labelledby="constellation-title">
+        <a
+          className={`constellation-dock ${opened.length > 0 ? "is-visible" : ""} ${constellationComplete ? "is-complete" : ""}`}
+          href="#constellation"
+          ref={constellationDockRef}
+          aria-label={`미니 하트 별자리. 마흔 개 중 ${opened.length}개의 별이 켜졌습니다. 전체 별자리 보기`}
+          tabIndex={opened.length > 0 ? 0 : -1}
+        >
+          <span className="dock-copy" aria-live="polite">
+            <small>{constellationComplete ? "HEART COMPLETE" : "별빛이 켜졌어요"}</small>
+            <strong>{opened.length}<i>/40</i></strong>
+          </span>
+          <span className="dock-heart" aria-hidden="true">
+            {constellationStars.map((star) => (
+              <i
+                className={`${openedSet.has(star.id) ? "is-lit" : ""} ${lastLitStar === star.id ? "is-new" : ""}`}
+                key={`dock-star-${star.id}`}
+                style={{ left: `${star.x}%`, top: `${star.y}%` }}
+              />
+            ))}
+            <b>40</b>
+          </span>
+          {lastLitStar !== null && opened.length > 0 && (
+            <span className="dock-notice" key={`notice-${lastLitStar}`} aria-hidden="true">
+              ✦ {lastLitStar + 1}번째 별
+            </span>
+          )}
+        </a>
+
+        {flyingStar && (
+          <span
+            className="star-flight"
+            key={`flight-${flyingStar.id}`}
+            style={{
+              left: flyingStar.x,
+              top: flyingStar.y,
+              "--flight-x": `${flyingStar.deltaX}px`,
+              "--flight-y": `${flyingStar.deltaY}px`,
+            } as CSSProperties}
+            onAnimationEnd={() => setFlyingStar(null)}
+            aria-hidden="true"
+          >
+            ✦
+          </span>
+        )}
+
+        <section className={`constellation-map ${constellationComplete ? "is-complete" : ""}`} id="constellation" aria-labelledby="constellation-title">
           <div className="constellation-copy">
             <span>YOUR HEART CONSTELLATION</span>
             <h3 id="constellation-title">카드를 열 때마다<br /><em>마음에 별이 켜져요</em></h3>
@@ -501,7 +572,7 @@ export default function Home() {
                       <button
                         className={`reason-card reason-copy-${copySize} ${isOpen ? "is-open" : ""}`}
                         key={reason}
-                        onClick={() => reveal(index)}
+                        onClick={(event) => reveal(index, event.currentTarget)}
                         type="button"
                         aria-label={`${index + 1}번째 사랑의 이유${isOpen ? `: ${reason}. ${character.name} 캐릭터` : " 열기"}`}
                         aria-expanded={isOpen}
