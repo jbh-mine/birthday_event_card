@@ -35,7 +35,7 @@ test("keeps the first screen resilient and the reason cards accessible", async (
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.doesNotMatch(page, /introDone|setTimeout\(|useEffect/);
+  assert.doesNotMatch(page, /introDone|setTimeout\(/);
   assert.match(page, /aria-expanded=\{isOpen\}/);
   assert.match(page, /isOpen && \(/);
   assert.match(page, /className="character-art"/);
@@ -61,6 +61,7 @@ test("includes the photo-free one-minute birthday film", async () => {
   assert.match(page, /src="\.\/birthday-film\.mp4"/);
   assert.match(page, /poster="\.\/birthday-film-poster\.jpg"/);
   assert.match(page, /playsInline/);
+  assert.match(page, /kind="captions" src="\.\/birthday-film-ko\.vtt"/);
   assert.match(page, /1분 영화 시작하기/);
   assert.match(page, /빛으로 그린 1분 성장 드라마/);
   assert.match(generator, /draw_cradle/);
@@ -128,7 +129,7 @@ test("turns forty cards and six cats into an accessible birthday finale", async 
   assert.match(page, /collectCat\(chapterIndex \* 2/);
   assert.match(page, /navigator\.mediaDevices\.getUserMedia/);
   assert.match(page, /new AudioContext\(\)/);
-  assert.match(page, /requestAnimationFrame\(detectBlow\)/);
+  assert.match(page, /detectCandleBlow\(analyser/);
   assert.match(page, /window\.speechSynthesis\.speak/);
   assert.match(page, /aria-live="polite"/);
   assert.match(css, /\.constellation-map/);
@@ -139,6 +140,13 @@ test("turns forty cards and six cats into an accessible birthday finale", async 
   assert.match(css, /@keyframes flameDance/);
   assert.match(css, /@keyframes fireworkBurst/);
   assert.ok(socialPreview.size > 100_000);
+});
+
+test("uses the published GitHub Pages URL for shared birthday cards", async () => {
+  const html = await (await render()).text();
+  assert.match(html, /property="og:url" content="https:\/\/jbh-mine\.github\.io\/birthday_event_card\/"/);
+  assert.match(html, /property="og:image" content="https:\/\/jbh-mine\.github\.io\/birthday_event_card\/og\.png"/);
+  assert.doesNotMatch(html, /app\.github\.dev/);
 });
 
 test("exports a relative-path static site for GitHub Pages", async () => {

@@ -1,7 +1,8 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { detectCandleBlow } from "./blow-detector";
 
 const reasons = [
   "당신이 웃으면 집 안의 공기가 달라져요.",
@@ -188,12 +189,14 @@ export default function Home() {
   const [filmStarted, setFilmStarted] = useState(false);
   const [filmPlaying, setFilmPlaying] = useState(false);
   const [filmEnded, setFilmEnded] = useState(false);
+  const [filmMessage, setFilmMessage] = useState("");
   const [catSoundEnabled, setCatSoundEnabled] = useState(true);
   const [foundCats, setFoundCats] = useState<number[]>([]);
   const [candleListening, setCandleListening] = useState(false);
   const [candleBlown, setCandleBlown] = useState(false);
-  const [candleMessage, setCandleMessage] = useState("마흔 개의 별과 여섯 고양이를 모두 만나면 촛불이 켜져요.");
+  const [candleMessage, setCandleMessage] = useState("소원을 빌고 불꽃을 누르거나 마이크로 불어주세요.");
   const [narrating, setNarrating] = useState(false);
+  const [narrationMessage, setNarrationMessage] = useState("");
   const [lastLitStar, setLastLitStar] = useState<number | null>(null);
   const [flyingStar, setFlyingStar] = useState<{
     id: number;
@@ -204,6 +207,15 @@ export default function Home() {
   } | null>(null);
   const filmRef = useRef<HTMLVideoElement>(null);
   const constellationDockRef = useRef<HTMLAnchorElement>(null);
+  const microphoneCleanupRef = useRef<(() => void) | null>(null);
+  const microphoneRequestRef = useRef(0);
+  const candleBlownRef = useRef(false);
+
+  useEffect(() => () => {
+    microphoneRequestRef.current += 1;
+    microphoneCleanupRef.current?.();
+    window.speechSynthesis?.cancel();
+  }, []);
 
   const openedSet = useMemo(() => new Set(opened), [opened]);
   const foundCatSet = useMemo(() => new Set(foundCats), [foundCats]);
@@ -260,88 +272,106 @@ export default function Home() {
     const film = filmRef.current;
     if (!film) return;
     if (filmEnded) film.currentTime = 0;
+    setFilmMessage("");
     setFilmStarted(true);
     setFilmEnded(false);
     try {
       await film.play();
     } catch {
       setFilmStarted(false);
+      setFilmMessage("영화를 재생하지 못했어요. 아래 재생 버튼을 다시 눌러주세요.");
     }
   };
 
   const finishCandle = () => {
-    if (!celebrationUnlocked || candleBlown) return;
+    if (!celebrationUnlocked || candleBlownRef.current) return;
+    candleBlownRef.current = true;
+    microphoneRequestRef.current += 1;
+    microphoneCleanupRef.current?.();
+    microphoneCleanupRef.current = null;
     setCandleListening(false);
     setCandleBlown(true);
     setCandleMessage("소원이 빛이 되었어요. 이제 당신을 위한 영화가 시작됩니다.");
     navigator.vibrate?.([60, 50, 90, 40, 130]);
     requestAnimationFrame(() => {
-      document.getElementById("celebration")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("film")?.scrollIntoView({ behavior: "smooth", block: "center" });
       void playFilm();
     });
   };
 
   const listenForBlow = async () => {
-    if (!celebrationUnlocked || candleBlown || candleListening) return;
+    if (!celebrationUnlocked || candleBlownRef.current || candleListening) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       setCandleMessage("이 브라우저에서는 마이크를 사용할 수 없어요. 불꽃을 직접 눌러주세요.");
       return;
     }
 
+    const request = ++microphoneRequestRef.current;
+    setCandleListening(true);
+    setCandleMessage("마이크 권한을 기다리고 있어요. 불꽃을 직접 눌러도 괜찮아요.");
+    let stream: MediaStream | undefined;
+    let audioContext: AudioContext | undefined;
+    let stopDetection: (() => void) | undefined;
+    const stopListening = () => {
+      stopDetection?.();
+      stream?.getTracks().forEach((track) => track.stop());
+      if (audioContext && audioContext.state !== "closed") void audioContext.close().catch(() => undefined);
+    };
+    microphoneCleanupRef.current = stopListening;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new AudioContext();
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (request !== microphoneRequestRef.current) {
+        stopListening();
+        return;
+      }
+      audioContext = new AudioContext();
+      await audioContext.resume();
+      if (request !== microphoneRequestRef.current) {
+        stopListening();
+        return;
+      }
       const analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaStreamSource(stream);
-      const samples = new Uint8Array(analyser.fftSize);
-      const startedAt = performance.now();
-      analyser.fftSize = 512;
-      source.connect(analyser);
-      setCandleListening(true);
+      audioContext.createMediaStreamSource(stream).connect(analyser);
       setCandleMessage("촛불을 향해 후— 하고 불어보세요.");
-
-      const stopListening = () => {
-        stream.getTracks().forEach((track) => track.stop());
-        void audioContext.close();
+      stopDetection = detectCandleBlow(analyser, finishCandle, () => {
+        stopListening();
+        microphoneCleanupRef.current = null;
         setCandleListening(false);
-      };
-
-      const detectBlow = () => {
-        analyser.getByteTimeDomainData(samples);
-        const volume = samples.reduce((total, sample) => total + Math.abs(sample - 128), 0) / samples.length;
-        if (volume > 18) {
-          stopListening();
-          finishCandle();
-          return;
-        }
-        if (performance.now() - startedAt > 12000) {
-          stopListening();
-          setCandleMessage("바람 감지가 어려워요. 불꽃을 직접 눌러도 괜찮아요.");
-          return;
-        }
-        requestAnimationFrame(detectBlow);
-      };
-
-      requestAnimationFrame(detectBlow);
+        setCandleMessage("바람 감지가 어려워요. 불꽃을 직접 눌러도 괜찮아요.");
+      });
     } catch {
+      stopListening();
+      if (request !== microphoneRequestRef.current) return;
+      microphoneCleanupRef.current = null;
       setCandleListening(false);
       setCandleMessage("마이크 권한 없이도 괜찮아요. 불꽃을 직접 눌러주세요.");
     }
   };
 
   const toggleNarration = () => {
-    if (!("speechSynthesis" in window)) return;
+    if (!("speechSynthesis" in window)) {
+      setNarrationMessage("이 브라우저는 음성 읽기를 지원하지 않아요. 편지 내용을 직접 읽어주세요.");
+      return;
+    }
     if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
       setNarrating(false);
       return;
     }
     const narration = new SpeechSynthesisUtterance(letterNarration);
+    setNarrationMessage("");
+    filmRef.current?.pause();
     narration.lang = "ko-KR";
     narration.rate = 0.88;
     narration.pitch = 0.92;
     narration.onend = () => setNarrating(false);
-    narration.onerror = () => setNarrating(false);
+    narration.onerror = (event) => {
+      setNarrating(false);
+      if (event.error !== "canceled" && event.error !== "interrupted") {
+        setNarrationMessage("음성 편지를 재생하지 못했어요. 다시 눌러보거나 편지 내용을 직접 읽어주세요.");
+      }
+    };
     setNarrating(true);
     window.speechSynthesis.speak(narration);
   };
@@ -664,7 +694,9 @@ export default function Home() {
           <p className="celebration-kicker">FORTY STARS, ONE WISH</p>
           <h2>{candleBlown ? <>소원이 빛이 되어<br /><em>당신에게 닿았어요</em></> : <>마흔 개의 빛 앞에서<br /><em>한 가지 소원을 빌어요</em></>}</h2>
           <p className="celebration-description">
-            {celebrationUnlocked
+            {candleBlown
+              ? "소원을 담은 촛불이 꺼졌어요. 영화와 마지막 편지를 함께 감상해요."
+              : celebrationUnlocked
               ? "마이크 버튼을 누르고 촛불을 향해 후— 불어보세요. 마이크를 쓰지 않아도 불꽃을 직접 누를 수 있어요."
               : "마흔 개의 카드를 열고, 카드 사이에 찾아온 고양이 여섯 마리의 발자국을 모으면 촛불이 켜집니다."}
           </p>
@@ -694,7 +726,7 @@ export default function Home() {
             </button>
           )}
           {candleBlown && <a className="film-after-wish" href="#film" onClick={() => void playFilm()}>당신을 위한 1분 영화 보기 ▶</a>}
-          <p className="candle-message" aria-live="polite">{candleMessage}</p>
+          <p className="candle-message" aria-live="polite">{celebrationUnlocked ? candleMessage : "마흔 개의 별과 여섯 고양이를 모두 만나면 촛불이 켜져요."}</p>
         </div>
       </section>
 
@@ -739,16 +771,22 @@ export default function Home() {
               setFilmPlaying(false);
               setFilmEnded(true);
             }}
+            onError={() => {
+              setFilmPlaying(false);
+              setFilmStarted(false);
+              setFilmMessage("영화를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 눌러주세요.");
+            }}
             aria-label="아기 때부터 마흔과 미래까지 성장하는 과정을 담은 1분 생일 영화"
           >
             <source src="./birthday-film.mp4" type="video/mp4" />
+            <track kind="captions" src="./birthday-film-ko.vtt" srcLang="ko" label="한국어 자막" />
           </video>
 
           {(!filmStarted || filmEnded) && (
             <button className="film-launch" type="button" onClick={playFilm}>
               <span className="play-orb" aria-hidden="true"><i>▶</i></span>
               <strong>{filmEnded ? "한 번 더 보기" : "1분 영화 시작하기"}</strong>
-              <small>탭하면 음악과 함께 재생됩니다</small>
+              <small>{filmMessage || "탭하면 음악과 함께 재생됩니다"}</small>
             </button>
           )}
 
@@ -791,6 +829,7 @@ export default function Home() {
               <button className={`voice-letter-button ${narrating ? "is-playing" : ""}`} type="button" onClick={toggleNarration}>
                 <span aria-hidden="true">♪</span>{narrating ? "음성 편지 멈추기" : "음성으로 편지 듣기"}
               </button>
+              {narrationMessage && <p className="narration-message" role="status">{narrationMessage}</p>}
               <div className="signature">영원히 당신의 편인, 남편이</div>
             </article>
           )}
